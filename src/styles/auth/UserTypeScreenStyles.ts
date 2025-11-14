@@ -1,0 +1,198 @@
+import { StyleSheet } from 'react-native';
+
+export const userTypeScreenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  backgroundPattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0A0A0A',
+    opacity: 0.1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  logoGlow: {
+    shadowColor: '#00FF84',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logo: {
+    height: 120,
+    width: 120,
+  },
+  appTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#00FF84',
+    marginTop: 15,
+    textShadowColor: '#00FF84',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+    letterSpacing: 1,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#00D1FF',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  typesContainer: {
+    marginBottom: 30,
+  },
+  typeCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    marginBottom: 20,
+    padding: 20,
+    position: 'relative',
+    shadowColor: '#00D1FF',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  cardContent: {
+    position: 'relative',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    shadowColor: '#00FF84',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  typeIcon: {
+    fontSize: 28,
+  },
+  titleContainer: {
+    flex: 1,
+  },
+  typeTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  typeSubtitle: {
+    fontSize: 14,
+    color: '#00D1FF',
+    opacity: 0.9,
+  },
+  typeDescription: {
+    fontSize: 16,
+    color: '#fff',
+    lineHeight: 22,
+    marginBottom: 15,
+  },
+  featuresContainer: {
+    marginBottom: 10,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  featureText: {
+    fontSize: 14,
+    color: '#fff',
+    marginLeft: 8,
+    flex: 1,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#00FF84',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  buttonContainer: {
+    marginBottom: 30,
+    shadowColor: '#00FF84',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 10,
+  },
+  continueButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  loginContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  loginText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#00D1FF',
+    textShadowColor: '#00D1FF',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  footerLink: {
+    color: '#00D1FF',
+    fontWeight: '500',
+  },
+});

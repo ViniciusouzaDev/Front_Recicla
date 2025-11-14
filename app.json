@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "ReciclaApp",
+    "slug": "reciclaapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/Logo_recicla.png",
+        "backgroundColor": "#ffffff"
+      },
+      "statusBar": {
+        "hidden": true
+      }
+    },
+    "ios": {
+      "supportsTablet": true,
+      "statusBar": {
+        "hidden": true
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}

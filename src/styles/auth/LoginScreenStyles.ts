@@ -1,0 +1,185 @@
+import { StyleSheet } from 'react-native';
+
+export const loginScreenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  backgroundPattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0A0A0A',
+    opacity: 0.1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginVertical: 40,
+  },
+  logoGlow: {
+    shadowColor: '#00FF84',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  logo: {
+    height: 230,
+    width: 230,
+  },
+  appTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#00FF84',
+    marginTop: 20,
+    textShadowColor: '#00FF84',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+    letterSpacing: 2,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#00D1FF',
+    textAlign: 'center',
+    marginTop: 10,
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  inputContainer: {
+    marginBottom: 30,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#00D1FF',
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    shadowColor: '#00D1FF',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#fff',
+  },
+  buttonContainer: {
+    marginBottom: 30,
+    shadowColor: '#00FF84',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    elevation: 10,
+  },
+  continueButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#00D1FF',
+    opacity: 0.3,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#00D1FF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  socialButtonsContainer: {
+    marginBottom: 30,
+  },
+  socialButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FFD600',
+    shadowColor: '#FFD600',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  socialButtonText: {
+    color: '#FFD600',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  createAccountContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  createAccountText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#00D1FF',
+    textShadowColor: '#00D1FF',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  footerLink: {
+    color: '#00D1FF',
+    fontWeight: '500',
+  },
+  eyeIconContainer: {
+    padding: 5,
+  },
+});

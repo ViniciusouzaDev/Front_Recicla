@@ -1,0 +1,300 @@
+import { StyleSheet } from 'react-native';
+
+export const collectorScreenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  backgroundPattern: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0A0A0A',
+    opacity: 0.1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderBottomWidth: 1,
+    borderBottomColor: '#00D1FF',
+  },
+  menuButton: {
+    padding: 8,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#00FF84',
+    marginRight: 8,
+    textShadowColor: '#00FF84',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
+  },
+  collectorIcon: {
+    fontSize: 20,
+  },
+  avatarButton: {
+    padding: 8,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#00FF84',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#00FF84',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#00D1FF',
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    marginHorizontal: 5,
+    borderRadius: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 209, 255, 0.3)',
+  },
+  activeFilterTab: {
+    backgroundColor: '#00D1FF',
+    borderColor: '#00D1FF',
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeFilterTabText: {
+    color: '#000',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  collectionCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#00D1FF',
+    shadowColor: '#00D1FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  cardContent: {
+    padding: 15,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  materialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  materialIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  materialIconText: {
+    fontSize: 20,
+  },
+  materialName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  pointsText: {
+    fontSize: 12,
+    color: '#00FF84',
+    fontWeight: '600',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  materialPhoto: {
+    width: '100%',
+    height: 150,
+    borderRadius: 12,
+  },
+  collectionInfo: {
+    marginBottom: 15,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addressText: {
+    fontSize: 14,
+    color: '#fff',
+    marginLeft: 8,
+    flex: 1,
+  },
+  distanceText: {
+    fontSize: 14,
+    color: '#00FF84',
+    marginLeft: 8,
+    fontWeight: '600',
+  },
+  userText: {
+    fontSize: 14,
+    color: '#FFD600',
+    marginLeft: 8,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    marginTop: 10,
+  },
+  acceptButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  completeButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  acceptButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  completeButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#00FF84',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#00D1FF',
+  },
+  refreshButtonText: {
+    color: '#00D1FF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  // Tab Bar Styles
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderTopWidth: 1,
+    borderTopColor: '#00D1FF',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  activeTab: {
+    backgroundColor: 'rgba(0, 209, 255, 0.1)',
+    borderRadius: 8,
+  },
+  tabLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  activeTabLabel: {
+    color: '#00D1FF',
+    fontWeight: '600',
+  },
+  // Estilos para botões desabilitados
+  disabledButton: {
+    opacity: 0.6,
+  },
+  disabledButtonText: {
+    color: '#999',
+  },
+  // Estilos para indicador de localização
+  locationStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  locationStatusText: {
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+});
