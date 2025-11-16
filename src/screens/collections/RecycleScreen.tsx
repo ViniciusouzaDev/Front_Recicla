@@ -15,13 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import logo from "../../../assets/Logo_recicla.png";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { jwtDecode } from 'jwt-decode';
+ 
 import { recycleScreenStyles } from '../../../src/styles/collections/RecycleScreenStyles';
 import ProfileHeader from '../../components/ProfileHeader';
 import ShareButton from '../../components/ShareButton';
-import { collectionService } from '../../services/CollectionService';
-import { processPhotoWithIA, IAResponse } from '../../services/IAService';
+import { uploadColeta, UploadColetaResponse } from '../../services/coletaUploadService';
 
 interface Material {
   id: string;
@@ -45,6 +43,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
   const [scaleAnim] = useState(new Animated.Value(1));
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [detectedMaterials, setDetectedMaterials] = useState<Record<string, number> | null>(null);
+  const [currentCoords, setCurrentCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const materials: Material[] = [
     { id: 'paper', name: 'Papel', color: '#00D1FF', icon: '📄', description: 'Jornais, revistas, caixas' },
@@ -57,7 +56,6 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
     { id: 'Home', icon: 'home', label: 'Home' },
     { id: 'Trophies', icon: 'trophy', label: 'Troféus' },
     { id: 'Recycle', icon: 'leaf', label: 'Reciclar' },
-    { id: 'Collections', icon: 'list', label: 'Coletas' },
     { id: 'Collector', icon: 'car', label: 'Coletador' },
   ];
 
@@ -87,7 +85,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
     ]).start();
   };
 
-  // ======== TIRAR FOTO + PROCESSAR IA COM PREVIEW ========
+  // ======== TIRAR FOTO ========
   const takePhoto = async () => {
     try {
       const result = await ImagePicker.launchCameraAsync({
@@ -102,7 +100,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
       const uri = result.assets[0].uri;
       setPhoto(uri);
       setPhotoPreview(uri);
-      setIsProcessingPhoto(true);
+      setIsProcessingPhoto(false);
 
       // 1️⃣ Pegando localização
       let local_coletou = address || 'Local não definido';
@@ -123,38 +121,10 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
         // fallback permanece
       }
 
-      // 2️⃣ Pegando usuário do token
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Usuário não autenticado');
-
-      const decoded: any = jwtDecode(token); // CORRIGIDO
-      const usuario_id = decoded?.id || decoded?.usuario_id;
-      if (!usuario_id) throw new Error('Usuário inválido');
-
-      // 3️⃣ Data e hora
-      const now = new Date();
-      const data_coletou = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      const hora_coletou = now.toTimeString().split(' ')[0]; // HH:MM:SS
-
-      // 4️⃣ Enviar para backend
-      const response: IAResponse = await processPhotoWithIA(
-        uri,
-        usuario_id,
-        local_coletou,
-        data_coletou,
-        hora_coletou
-      );
-
-      if (response.detalhes) {
-        setDetectedMaterials(response.detalhes);
-        const primaryMaterial = Object.keys(response.detalhes)[0];
-        setSelectedMaterial(primaryMaterial);
-      }
-
-      setPhotoPreview(response.previewUri || uri);
+      // Envio será feito no confirmar cadastro para evitar duplicidade
     } catch (error: any) {
-      console.error('Erro ao processar IA:', error);
-      Alert.alert('Erro', error.response?.data?.error || error.message || 'Não foi possível processar a foto.');
+      console.error('Erro ao capturar foto:', error);
+      Alert.alert('Erro', error.response?.data?.error || error.message || 'Não foi possível capturar a foto.');
     } finally {
       setIsProcessingPhoto(false);
     }
@@ -169,6 +139,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
         return;
       }
       const location = await Location.getCurrentPositionAsync({});
+      setCurrentCoords({ latitude: location.coords.latitude, longitude: location.coords.longitude });
       const [addr] = await Location.reverseGeocodeAsync({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -189,22 +160,37 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
     if (!selectedMaterial) { Alert.alert('Atenção', 'Selecione o tipo de material'); return; }
     if (!photo) { Alert.alert('Atenção', 'Tire uma foto do lixo'); return; }
     if (!address.trim()) { Alert.alert('Atenção', 'Informe o endereço'); return; }
+    if (!currentCoords) { Alert.alert('Atenção', 'Use a localização atual para preencher latitude e longitude'); return; }
 
     try {
       const material = materials.find(m => m.id === selectedMaterial);
-      const collectionRequest = await collectionService.createCollectionRequest({
-        userId: 'user_123',
-        materialType: selectedMaterial,
-        materialName: material?.name || '',
-        photoUri: photo,
-        address: address,
-        latitude: 0,
-        longitude: 0,
-      });
+      const now = new Date();
+      const data_coleta = now.toISOString().split('T')[0];
+      const hora_coleta = now.toTimeString().split(' ')[0];
+
+      const mapMaterial = (id: string): 'plastico' | 'papel' | 'metal' | 'vidro' => {
+        switch (id) {
+          case 'plastic': return 'plastico';
+          case 'paper': return 'papel';
+          case 'metal': return 'metal';
+          case 'glass': return 'vidro';
+          default: return 'plastico';
+        }
+      };
+
+      const response: UploadColetaResponse = await uploadColeta(
+        photo!,
+        address,
+        data_coleta,
+        hora_coleta,
+        mapMaterial(selectedMaterial),
+        currentCoords?.latitude ?? 0,
+        currentCoords?.longitude ?? 0
+      );
 
       Alert.alert(
         'Sucesso!',
-        `Solicitação de coleta ${material?.name} criada com sucesso!\n\nStatus: ${collectionRequest.status}\n\nEndereço: ${address}\n\nAguarde um coletor aceitar sua solicitação.`,
+        `Solicitação de coleta ${material?.name} enviada!\n\nEndereço: ${address}\n\nAguarde um coletor aceitar sua solicitação.`,
         [{ text: 'OK', onPress: () => {
           setSelectedMaterial(null);
           setPhoto(null);
@@ -213,8 +199,8 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
         }}]
       );
     } catch (error) {
-      console.error('Erro ao criar solicitação de coleta:', error);
-      Alert.alert('Erro', 'Não foi possível criar a solicitação de coleta. Tente novamente.');
+      console.error('Erro ao enviar coleta:', error);
+      Alert.alert('Erro', 'Não foi possível enviar a coleta. Tente novamente.');
     }
   };
 
@@ -225,7 +211,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
         <Image source={logo} style={recycleScreenStyles.logoRecycle} />
         <Text style={recycleScreenStyles.title}>Recicla+</Text>
       </View>
-      <ProfileHeader navigation={navigation} userType="user" userName="João Silva" userEmail="joao.silva@email.com" />
+      <ProfileHeader navigation={navigation} />
     </View>
   );
 
@@ -275,7 +261,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
-                <Text style={{ color:'#fff', fontWeight:'bold' }}>Processando IA...</Text>
+                <Text style={{ color:'#fff', fontWeight:'bold' }}>Preparando envio...</Text>
               </View>
             )}
           </View>
@@ -350,7 +336,6 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
             setActiveTab(tab.id);
             if (tab.id === 'Home') navigation.navigate('Dashboard');
             else if (tab.id === 'Trophies') navigation.navigate('Ranking');
-            else if (tab.id === 'Collections') navigation.navigate('CollectionStatus');
             else if (tab.id === 'Collector') navigation.navigate('Collector');
           }}
         >

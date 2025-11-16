@@ -10,7 +10,7 @@ import {
 
 import { DashboardScreen } from './src/screens/dashboard';
 import { RankingScreen } from './src/screens/ranking';
-import { RecycleScreen, CollectionStatusScreen } from './src/screens/collections';
+import { RecycleScreen, FinalizarColetaScreen } from './src/screens/collections';
 import { CollectorScreen } from './src/screens/collectors';
 import { ProfileScreen } from './src/screens/profile';
 import { CompanyRegisterScreen } from './src/screens/company';
@@ -95,7 +95,7 @@ export default function App() {
           <Stack.Screen name="Ranking" component={RankingScreen} />
 
           <Stack.Screen name="Recycle" component={RecycleScreen} />
-          <Stack.Screen name="CollectionStatus" component={CollectionStatusScreen} />
+          <Stack.Screen name="FinalizarColeta" component={FinalizarColetaScreen} />
 
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="CompanyRegister" component={CompanyRegisterScreen} />

@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { rankingScreenStyles } from '../../../src/styles/ranking/RankingScreenStyles';
 import ProfileHeader from '../../components/ProfileHeader';
 import { rankingService } from '../../../src/services/rankingService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
   id: number;
@@ -28,6 +29,7 @@ interface RankingScreenProps {
 export default function RankingScreen({ navigation }: RankingScreenProps) {
   const [activeTab, setActiveTab] = useState('Trophies');
   const [confettiAnimation] = useState(new Animated.Value(0));
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,11 +38,15 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
     { id: 'Home', icon: 'home', label: 'Home' },
     { id: 'Trophies', icon: 'trophy', label: 'Troféus' },
     { id: 'Recycle', icon: 'leaf', label: 'Reciclar' },
-    { id: 'Collections', icon: 'list', label: 'Coletas' },
     { id: 'Collector', icon: 'car', label: 'Coletador' },
   ];
 
   useEffect(() => {
+    const checkToken = async () => {
+    const token = await AsyncStorage.getItem("token");
+    console.log("TOKEN SALVO:", token);
+  };
+  checkToken();
     const confettiLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(confettiAnimation, {
@@ -58,8 +64,15 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
     confettiLoop.start();
 
     const fetchRanking = async () => {
+      console.log("REQUISIÇÃO → ENVIANDO TOKEN?");
+      console.log(await AsyncStorage.getItem("token"));
+
       try {
         const data = await rankingService.getAllRankings();
+        if (!Array.isArray(data)) {
+          setError("Formato inválido do ranking");
+          return;
+        }
 
         const formatted: User[] = data.map((item: any) => ({
           id: item.usuario.usuario_id,
@@ -130,12 +143,15 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
       <View style={rankingScreenStyles.titleContainer}>
         <Text style={rankingScreenStyles.title}>Ranking de Recicladores</Text>
       </View>
+
+      {userProfile && (
       <ProfileHeader 
-        navigation={navigation} 
-        userType="user" 
-        userName="João Silva" 
-        userEmail="joao.silva@email.com" 
+        navigation={navigation}
+          userType="user"
+          userName={userProfile.nome}
+          userEmail={userProfile.email}
       />
+      )}
     </View>
   );
 
@@ -234,7 +250,6 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
             setActiveTab(tab.id);
             if (tab.id === 'Home') navigation.navigate('Dashboard');
             else if (tab.id === 'Recycle') navigation.navigate('Recycle');
-            else if (tab.id === 'Collections') navigation.navigate('CollectionStatus');
             else if (tab.id === 'Collector') navigation.navigate('Collector');
           }}
         >

@@ -15,8 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { collectorScreenStyles } from '../../../src/styles/collectors/CollectorScreenStyles';
 import ProfileHeader from '../../components/ProfileHeader';
-import { collectionService } from '../../services/CollectionService';
+import { collectorService } from '../../services/CollectorService';
 import { CollectionRequest, CollectionStatus } from '../../types/CollectionTypes';
+import { tokenApi } from '../../services/tokenApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   calculateDistance, 
   isUserNearCollection, 
@@ -42,6 +44,7 @@ interface Collection {
     name: string;
     avatar: string;
   };
+  token?: string; // Token associado à coleta em andamento
 }
 
 interface CollectorScreenProps {
@@ -231,45 +234,13 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
 
   const loadCollections = async () => {
     try {
-      // Usar mockups específicos para cada status
-      const mockCollections = getMockCollectionsByStatus(selectedFilter);
-      
-      // Buscar coletas reais do serviço se houver
-      const allCollections = collectionService.getAllCollections();
-      const availableCollections = allCollections.filter(c => c.status === 'Solicitada');
-      
-      // Converter coletas reais para o formato esperado
-      const convertedCollections: Collection[] = availableCollections.map(collection => ({
-        id: collection.id,
-        material: collection.materialType,
-        materialName: collection.materialName,
-        materialColor: getMaterialColor(collection.materialType),
-        materialIcon: getMaterialIcon(collection.materialType),
-        address: collection.address,
-        photo: collection.photoUri,
-        distance: collection.latitude && collection.longitude && userLocation 
-          ? calculateDistance(userLocation, { latitude: collection.latitude, longitude: collection.longitude })
-          : Math.random() * 5,
-        points: getMaterialPoints(collection.materialType),
-        status: collection.status === 'Solicitada' ? 'pending' : 
-                collection.status === 'Em andamento' ? 'in_progress' : 'completed',
-        createdAt: collection.createdAt.toISOString(),
-        coordinates: collection.latitude && collection.longitude 
-          ? { latitude: collection.latitude, longitude: collection.longitude }
-          : { latitude: -23.5505, longitude: -46.6333 },
-        user: {
-          name: 'Usuário',
-          avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=U'
-        }
-      }));
+      // Buscar TODAS as coletas do backend e filtrar por status na UI
+      const backendCollections = await collectorService.getAllCollections();
+      const convertedCollections = collectorService.convertCollectionsForScreen(backendCollections, userLocation ?? undefined);
 
-      // Filtrar coletas reais pelo status selecionado
-      const filteredRealCollections = convertedCollections.filter(c => c.status === selectedFilter);
-      
-      // Combinar mockups com coletas reais, priorizando mockups para demonstração
-      const finalCollections = mockCollections.length > 0 
-        ? mockCollections 
-        : filteredRealCollections;
+      const filtered = convertedCollections.filter(c => c.status === selectedFilter);
+      const mockCollections = getMockCollectionsByStatus(selectedFilter);
+      const finalCollections = filtered.length > 0 ? filtered : mockCollections;
         
       setCollections(finalCollections);
     } catch (error) {
@@ -401,15 +372,40 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
       return;
     }
 
+    // Quando a distância permitir, aceitar coleta e gerar token automaticamente
     try {
-      // Usar o serviço para aceitar a coleta
-      const success = await collectionService.assignCollectorToCollection(
+      // 1. Aceitar a coleta no backend primeiro
+      const success = await collectorService.assignCollectorToCollection(
         collectionId, 
-        'collector_123', // TODO: Obter ID do coletor logado
-        'João Coletor' // TODO: Obter nome do coletor logado
       );
 
-      if (success) {
+      if (!success) {
+        Alert.alert('Erro', 'Não foi possível aceitar a coleta. Tente novamente.');
+        return;
+      }
+
+      // 2. Gerar o token automaticamente após aceitar a coleta
+      let generatedToken: string | null = null;
+      try {
+        const tokenResponse = await tokenApi.gerarToken(collectionId);
+        generatedToken = tokenResponse.token;
+        
+        // Validar formato do token (máximo 7 dígitos, apenas números)
+        if (!/^\d{1,7}$/.test(generatedToken)) {
+          throw new Error('Token gerado não está no formato correto (máximo 7 dígitos numéricos)');
+        }
+        
+        // 3. Armazenar token no AsyncStorage associado à coleta
+        await AsyncStorage.setItem(`token_${collectionId}`, generatedToken);
+        console.log(`Token gerado e armazenado para coleta ${collectionId}`);
+      } catch (tokenError: any) {
+        console.error('Erro ao gerar token:', tokenError);
+        Alert.alert(
+          'Erro ao gerar token',
+          'A coleta foi aceita, mas não foi possível gerar o token. Tente finalizar a coleta mais tarde.',
+          [{ text: 'OK' }]
+        );
+        // Mesmo com erro no token, atualiza o estado da coleta
         setCollections(prev => 
           prev.map(collection => 
             collection.id === collectionId 
@@ -417,19 +413,38 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
               : collection
           )
         );
-        Alert.alert('Sucesso!', 'Coleta aceita com sucesso!');
-      } else {
-        Alert.alert('Erro', 'Não foi possível aceitar a coleta. Tente novamente.');
+        return;
       }
-    } catch (error) {
+
+      // 4. Atualizar estado da coleta com status 'in_progress'
+      setCollections(prev => 
+        prev.map(collection => 
+          collection.id === collectionId 
+            ? { 
+                ...collection, 
+                status: 'in_progress' as const
+              }
+            : collection
+        )
+      );
+      
+      // 5. Redirecionar automaticamente para a tela de Finalizar Coleta (sem expor token)
+      navigation.navigate('FinalizarColeta', { 
+        coletaId: collectionId
+      });
+      
+    } catch (error: any) {
       console.error('Erro ao aceitar coleta:', error);
-      Alert.alert('Erro', 'Não foi possível aceitar a coleta. Tente novamente.');
+      Alert.alert(
+        'Erro', 
+        error.message || 'Não foi possível aceitar a coleta. Tente novamente.'
+      );
     }
   };
 
   const handleCompleteCollection = async (collectionId: string) => {
     try {
-      const success = await collectionService.completeCollection(collectionId, 'Coleta finalizada pelo coletor');
+      const success = await collectorService.completeCollection(collectionId, 'Coleta finalizada pelo coletor');
       
       if (success) {
         setCollections(prev => 
@@ -474,10 +489,7 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
       </View>
       
       <ProfileHeader 
-        navigation={navigation} 
-        userType="user" 
-        userName="João Silva" 
-        userEmail="joao.silva@email.com" 
+        navigation={navigation}
       />
     </View>
   );
@@ -649,7 +661,12 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
           {collection.status === 'in_progress' && (
             <TouchableOpacity
               style={collectorScreenStyles.completeButton}
-              onPress={() => handleCompleteCollection(collection.id)}
+              onPress={async () => {
+            // Navegar para finalizar sem expor token
+            navigation.navigate('FinalizarColeta', { 
+              coletaId: collection.id
+            });
+              }}
             >
               <LinearGradient
                 colors={['#FFD600', '#FFC107']}
@@ -695,7 +712,6 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
       { id: 'Home', icon: 'home', label: 'Home' },
       { id: 'Trophies', icon: 'trophy', label: 'Ranking' },
       { id: 'Recycle', icon: 'leaf', label: 'Reciclar' },
-      { id: 'Collections', icon: 'list', label: 'Coletas' },
       { id: 'Collector', icon: 'car', label: 'Coletador' },
     ];
 
@@ -715,8 +731,6 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
                 navigation.navigate('Ranking');
               } else if (tab.id === 'Recycle') {
                 navigation.navigate('Recycle');
-              } else if (tab.id === 'Collections') {
-                navigation.navigate('CollectionStatus');
               }
             }}
           >

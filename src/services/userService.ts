@@ -83,7 +83,7 @@ export const userService = {
       const { data } = await api.get(`/pontuacao/usuario/${userId}`, {
         headers: await getAuthHeaders(),
       });
-      return data;
+      return data?.data ?? [];
     } catch (error: any) {
       console.error("❌ Erro ao buscar histórico de pontuação:", error.response?.data || error.message);
       throw new Error("Erro ao buscar histórico de pontuação");

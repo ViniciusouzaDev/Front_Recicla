@@ -234,7 +234,6 @@ export default function DashboardScreen({ navigation }: any) {
     { id: "Home", icon: "home", label: "Home" },
     { id: "Trophies", icon: "trophy", label: "Troféus" },
     { id: "Recycle", icon: "leaf", label: "Reciclar" },
-    { id: "Collections", icon: "list", label: "Coletas" },
     { id: "Collector", icon: "car", label: "Coletador" },
   ];
 
@@ -251,8 +250,6 @@ export default function DashboardScreen({ navigation }: any) {
             setActiveTab(tab.id);
             if (tab.id === "Trophies") navigation.navigate("Ranking");
             if (tab.id === "Recycle") navigation.navigate("Recycle");
-            if (tab.id === "Collections")
-              navigation.navigate("CollectionStatus");
             if (tab.id === "Collector") navigation.navigate("Collector");
           }}
         >

@@ -1,3 +1,5 @@
+// src/services/rankingService.ts
+
 import api from "./Api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -7,15 +9,23 @@ async function getAuthHeaders() {
 }
 
 export const rankingService = {
-  async getAllRankings() {
+  async getAllRankings(): Promise<any[]> {
     try {
-      const { data } = await api.get("/pontuacao", {
+      const response = await api.get("/pontuacao/ranking", {
         headers: await getAuthHeaders(),
       });
-      return data;
+
+      const payload = response.data;
+      if (Array.isArray(payload)) {
+        return payload;
+      }
+      if (Array.isArray(payload?.data)) {
+        return payload.data;
+      }
+      return [];
     } catch (error: any) {
       console.error("Erro ao buscar ranking:", error.response?.data || error.message);
-      throw new Error("Erro ao buscar ranking dos usuários");
+      return [];
     }
   },
 };

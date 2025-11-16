@@ -25,45 +25,77 @@ export interface ScreenCollection {
 }
 
 class CollectorService {
-  /**
-   * Buscar todas as coletas do backend
-   */
+
+  /** Buscar todas as coletas */
   async getAllCollections(): Promise<CollectionRequest[]> {
-    const response = await api.get<CollectionRequest[]>('/coletas');
-    return response.data;
-  }
-
-  /**
-   * Buscar coletas por status
-   */
-  async getCollectionsByStatus(status: 'Solicitada' | 'Em andamento' | 'Finalizada'): Promise<CollectionRequest[]> {
-    const response = await api.get<CollectionRequest[]>(`/coletas?status=${status}`);
-    return response.data;
-  }
-
-  /**
-   * Aceitar uma coleta (atribuir coletor)
-   */
-  async assignCollectorToCollection(
-    collectionId: string,
-    collectorId: string,
-    collectorName: string
-  ): Promise<boolean> {
     try {
-      const response = await api.post(`/coletas/${collectionId}/aceitar`, { collectorId, collectorName });
+      const r = await api.get('/coleta');
+      const payload = r.data;
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.data)) return payload.data;
+      if (Array.isArray(payload?.coletas)) return payload.coletas;
+      return [];
+    } catch (err: any) {
+      try {
+        const r2 = await api.get('/coletas');
+        const payload2 = r2.data;
+        if (Array.isArray(payload2)) return payload2;
+        if (Array.isArray(payload2?.data)) return payload2.data;
+        if (Array.isArray(payload2?.coletas)) return payload2.coletas;
+        return [];
+      } catch (err2) {
+        return [];
+      }
+    }
+  }
+
+  /** Buscar por status */
+  async getCollectionsByStatus(status: 'Solicitada' | 'Em andamento' | 'Finalizada'): Promise<CollectionRequest[]> {
+
+    if (status === 'Solicitada') {
+      const r = await api.get('/coleta/disponiveis');
+      const p = r.data;
+      if (Array.isArray(p)) return p;
+      if (Array.isArray(p?.data)) return p.data;
+      return [];
+    }
+
+    if (status === 'Em andamento') {
+      const r = await api.get('/coleta/aceitas');
+      const p = r.data;
+      if (Array.isArray(p)) return p;
+      if (Array.isArray(p?.data)) return p.data;
+      return [];
+    }
+
+    if (status === 'Finalizada') {
+      const r = await api.get('/coleta');
+      const p = r.data;
+      const list = Array.isArray(p) ? p : (Array.isArray(p?.data) ? p.data : []);
+      return list.filter((c: any) => /finalizada|conclu[ií]da/i.test(String(c.status)));
+    }
+
+    return [];
+  }
+
+  /** Aceitar coleta */
+  async assignCollectorToCollection(collectionId: string): Promise<boolean> {
+    try {
+      const response = await api.post('/coleta/aceitar', {
+        coletaId: collectionId
+      });
+
       return response.status === 200;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao aceitar coleta:', error);
       return false;
     }
   }
 
-  /**
-   * Finalizar uma coleta
-   */
+  /** Finalizar coleta */
   async completeCollection(collectionId: string, note: string): Promise<boolean> {
     try {
-      const response = await api.post(`/coletas/${collectionId}/finalizar`, { note });
+      const response = await api.post(`/coleta/${collectionId}/finalizar`, { note });
       return response.status === 200;
     } catch (error) {
       console.error('Erro ao finalizar coleta:', error);
@@ -71,90 +103,113 @@ class CollectorService {
     }
   }
 
-  /**
-   * Converte coletas do backend para formato usado na tela
-   */
+  /** Converter para exibição */
   convertCollectionsForScreen(
-    collections: CollectionRequest[],
+    collections: any,
     userLocation?: Coordinates
   ): ScreenCollection[] {
-    return collections.map(collection => {
-      const latitude = collection.latitude ?? -23.5505;
-      const longitude = collection.longitude ?? -46.6333;
+    const list: any[] = Array.isArray(collections)
+      ? collections
+      : Array.isArray(collections?.data)
+        ? collections.data
+        : Array.isArray(collections?.coletas)
+          ? collections.coletas
+          : [];
+
+    return list.map((collection: any) => {
+
+      const rawType = collection.tipo_residuo || collection.materialType || '';
+      const normType = this.normalizeMaterialType(rawType);
+
+      const latitude = Number(collection.latitude ?? collection.lat) || -23.5505;
+      const longitude = Number(collection.longitude ?? collection.lng ?? collection.long) || -46.6333;
+
+      let photo = '';
+      if (collection.arquivo_coleta) {
+        const base = (api.defaults.baseURL || '').replace(/\/+$/, '').replace(/\/(api)$/, '');
+        photo = `${base}/uploads/${collection.arquivo_coleta}`;
+      }
+
+      const status = /Solicitada|pendente/i.test(collection.status)
+        ? 'pending'
+        : /Em andamento|aceita/i.test(collection.status)
+          ? 'in_progress'
+          : /finalizada|conclu[ií]da/i.test(collection.status)
+            ? 'completed'
+            : 'completed';
 
       return {
-        id: collection.id,
-        material: collection.materialType,
-        materialName: collection.materialName,
-        materialColor: this.getMaterialColor(collection.materialType),
-        materialIcon: this.getMaterialIcon(collection.materialType),
-        address: collection.address,
-        photo: collection.photoUri,
+        id: String(collection.id ?? collection.coleta_id ?? ''),
+        material: normType,
+        materialName: this.materialDisplayName(normType),
+        materialColor: this.getMaterialColor(normType),
+        materialIcon: this.getMaterialIcon(normType),
+        address: collection.local_coleta || '',
+        photo,
         distance: userLocation
           ? this.calculateDistance(userLocation, { latitude, longitude })
           : 0,
-        points: this.getMaterialPoints(collection.materialType),
-        status:
-          collection.status === 'Solicitada'
-            ? 'pending'
-            : collection.status === 'Em andamento'
-            ? 'in_progress'
-            : 'completed',
-        createdAt: collection.createdAt
-          ? new Date(collection.createdAt).toISOString()
-          : new Date().toISOString(),
+        points: this.getMaterialPoints(normType),
+        status,
+        createdAt: collection.data_coleta && collection.hora_coleta
+          ? `${collection.data_coleta}T${collection.hora_coleta}`
+          : new Date(collection.createdAt || new Date()).toISOString(),
         coordinates: { latitude, longitude },
         user: {
-          name: (collection as any).user?.name ?? (collection as any).userName ?? '',
-          avatar: (collection as any).user?.avatar ?? (collection as any).userAvatar ?? '',
+          name: collection.usuario?.nome || 'Usuário',
+          avatar: '',
         },
       };
     });
   }
 
-  /* Helpers privados */
+  /* Helpers */
   private getMaterialColor(materialType: string): string {
     switch (materialType) {
-      case 'paper':
-        return '#00D1FF';
-      case 'glass':
-        return '#00FF84';
-      case 'metal':
-        return '#FFD600';
-      case 'plastic':
-        return '#FF6B00';
-      default:
-        return '#00D1FF';
+      case 'paper': return '#00D1FF';
+      case 'glass': return '#00FF84';
+      case 'metal': return '#FFD600';
+      case 'plastic': return '#FF6B00';
+      default: return '#00D1FF';
     }
   }
 
   private getMaterialIcon(materialType: string): string {
     switch (materialType) {
-      case 'paper':
-        return '📄';
-      case 'glass':
-        return '🍾';
-      case 'metal':
-        return '🥫';
-      case 'plastic':
-        return '🥤';
-      default:
-        return '♻️';
+      case 'paper': return '📄';
+      case 'glass': return '🍾';
+      case 'metal': return '🥫';
+      case 'plastic': return '🥤';
+      default: return '♻️';
     }
   }
 
   private getMaterialPoints(materialType: string): number {
     switch (materialType) {
-      case 'paper':
-        return 50;
-      case 'glass':
-        return 100;
-      case 'metal':
-        return 60;
-      case 'plastic':
-        return 75;
-      default:
-        return 50;
+      case 'paper': return 50;
+      case 'glass': return 100;
+      case 'metal': return 60;
+      case 'plastic': return 75;
+      default: return 50;
+    }
+  }
+
+  private normalizeMaterialType(raw: string): string {
+    const v = (raw || '').toLowerCase();
+    if (v.includes('papel')) return 'paper';
+    if (v.includes('vidro')) return 'glass';
+    if (v.includes('metal')) return 'metal';
+    if (v.includes('plast')) return 'plastic';
+    return 'plastic';
+  }
+
+  private materialDisplayName(norm: string): string {
+    switch (norm) {
+      case 'paper': return 'Papel';
+      case 'glass': return 'Vidro';
+      case 'metal': return 'Metal';
+      case 'plastic': return 'Plástico';
+      default: return 'Material';
     }
   }
 
@@ -170,7 +225,7 @@ class CollectorService {
       Math.sin(dLat / 2) ** 2 +
       Math.sin(dLon / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return parseFloat((R * c).toFixed(2)); // distância em km com 2 casas decimais
+    return parseFloat((R * c).toFixed(2));
   }
 }
 

@@ -47,7 +47,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     console.log('✅ Login bem-sucedido:', token);
 
     // 🔹 Armazena o token JWT no AsyncStorage
-    await AsyncStorage.setItem('@token', token);
+    await AsyncStorage.setItem('token', token);
     console.log('🔐 Token salvo com sucesso!');
 
     // 🔹 Navega para a Dashboard

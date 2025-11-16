@@ -103,8 +103,6 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     return;
   }
 
-  const [passwordVisible, setPasswordVisible] = useState(false);
-
   try {
     // Dados do usuário seguindo a mesma ordem da model Sequelize
     const userData = {

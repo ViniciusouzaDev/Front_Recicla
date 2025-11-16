@@ -1,33 +1,88 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Modal,
   StyleSheet,
-  SafeAreaView,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { commonStyles } from '../styles/shared/CommonStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../services/Api'; // ajuste o caminho se necessário
+import { NavigationProp } from '@react-navigation/native';
+
+type UserType = 'user' | 'company';
 
 interface ProfileHeaderProps {
-  navigation: any;
-  userType?: 'user' | 'company';
+  navigation: NavigationProp<any>;
+  // props opcionais — se fornecidas, usamos elas e não chamamos a API
+  userType?: UserType;
   userName?: string;
   userEmail?: string;
 }
 
-export default function ProfileHeader({ 
-  navigation, 
-  userType = 'user', 
-  userName = 'Usuário',
-  userEmail = 'usuario@email.com'
+export default function ProfileHeader({
+  navigation,
+  userType: propUserType,
+  userName: propUserName,
+  userEmail: propUserEmail,
 }: ProfileHeaderProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
+  // estados locais que podem vir de props ou da API
+  const [userName, setUserName] = useState<string>(propUserName ?? '');
+  const [userEmail, setUserEmail] = useState<string>(propUserEmail ?? '');
+  const [userType, setUserType] = useState<UserType>(propUserType ?? 'user');
+
+  // se as props NÃO foram passadas, carregamos do backend
+  useEffect(() => {
+    // se já veio via props, não precisa buscar
+    if (propUserName || propUserEmail || propUserType) return;
+
+    let mounted = true;
+
+    async function carregarUsuario() {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          // opcional: pegar também do storage a cópia do user (se você salva)
+          const userRaw = await AsyncStorage.getItem('user');
+          if (userRaw) {
+            const parsed = JSON.parse(userRaw);
+            if (!mounted) return;
+            setUserName(parsed.nome ?? '');
+            setUserEmail(parsed.email ?? '');
+            setUserType(parsed.nivel_conta === 'empresa' ? 'company' : 'user');
+          }
+          return;
+        }
+
+        const response = await api.get('/usuarios/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const user = response.data;
+        if (!mounted) return;
+
+        setUserName(user.nome ?? '');
+        setUserEmail(user.email ?? '');
+        setUserType(user.nivel_conta === 'empresa' ? 'company' : 'user');
+      } catch (err) {
+        console.log('Erro ao carregar usuário no ProfileHeader:', err);
+      }
+    }
+
+    carregarUsuario();
+
+    return () => {
+      mounted = false;
+    };
+  }, [propUserName, propUserEmail, propUserType]);
+
+  // Modal handlers
   const showModal = () => {
     setModalVisible(true);
     Animated.timing(fadeAnim, {
@@ -47,9 +102,10 @@ export default function ProfileHeader({
     });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     hideModal();
-    // Aqui você pode implementar a lógica de logout
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
     navigation.navigate('Login');
   };
 
@@ -83,9 +139,9 @@ export default function ProfileHeader({
         onRequestClose={hideModal}
       >
         <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
-          <TouchableOpacity 
-            style={styles.modalBackground} 
-            activeOpacity={1} 
+          <TouchableOpacity
+            style={styles.modalBackground}
+            activeOpacity={1}
             onPress={hideModal}
           >
             <View style={styles.modalContent}>
@@ -100,8 +156,8 @@ export default function ProfileHeader({
                     <Ionicons name="person" size={30} color="#fff" />
                   </View>
                   <View style={styles.profileInfo}>
-                    <Text style={styles.userName}>{userName}</Text>
-                    <Text style={styles.userEmail}>{userEmail}</Text>
+                    <Text style={styles.userName}>{userName || 'Usuário'}</Text>
+                    <Text style={styles.userEmail}>{userEmail || 'email@exemplo.com'}</Text>
                     <Text style={styles.userType}>
                       {userType === 'company' ? 'Empresa' : 'Usuário Comum'}
                     </Text>
