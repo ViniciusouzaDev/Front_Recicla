@@ -271,7 +271,7 @@ export default function CompanyAuthScreen({ navigation }: CompanyAuthScreenProps
   );
 
   return (
-    <SafeAreaView style={commonStyles.container}>
+    <SafeAreaView style={commonStyles.container} edges={[]}>
       
       <View style={commonStyles.backgroundPattern} />
       

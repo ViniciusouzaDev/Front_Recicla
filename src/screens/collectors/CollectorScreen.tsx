@@ -29,6 +29,7 @@ import {
 
 interface Collection {
   id: string;
+  coleta_id?: string;
   material: string;
   materialName: string;
   materialColor: string;
@@ -59,163 +60,7 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  // Mockups específicos para cada status
-  const getMockCollectionsByStatus = (status: 'pending' | 'in_progress' | 'completed'): Collection[] => {
-    const baseCollections = {
-      pending: [
-        {
-          id: 'pending_1',
-          material: 'paper',
-          materialName: 'Papel',
-          materialColor: '#00D1FF',
-          materialIcon: '📄',
-          address: 'Rua das Flores, 123 - Centro, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/00D1FF/FFFFFF?text=Papel+Reciclável',
-          distance: 0.8,
-          points: 50,
-          status: 'pending' as const,
-          createdAt: '2024-01-15T10:30:00Z',
-          coordinates: { latitude: -23.5505, longitude: -46.6333 },
-          user: {
-            name: 'João Silva',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=JS'
-          }
-        },
-        {
-          id: 'pending_2',
-          material: 'plastic',
-          materialName: 'Plástico',
-          materialColor: '#FF6B00',
-          materialIcon: '🥤',
-          address: 'Av. Paulista, 456 - Bela Vista, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/FF6B00/FFFFFF?text=Garrafas+PET',
-          distance: 1.2,
-          points: 75,
-          status: 'pending' as const,
-          createdAt: '2024-01-15T11:15:00Z',
-          coordinates: { latitude: -21.208810796503606, longitude: -47.75510620794601 },
-          user: {
-            name: 'Maria Santos',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=MS'
-          }
-        },
-        {
-          id: 'pending_3',
-          material: 'metal',
-          materialName: 'Metal',
-          materialColor: '#FFD600',
-          materialIcon: '🥫',
-          address: 'Rua Oscar Freire, 321 - Jardins, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/FFD600/FFFFFF?text=Latas+de+Alumínio',
-          distance: 2.5,
-          points: 60,
-          status: 'pending' as const,
-          createdAt: '2024-01-15T08:20:00Z',
-          coordinates: { latitude: -23.5687, longitude: -46.6693 },
-          user: {
-            name: 'Ana Oliveira',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=AO'
-          }
-        }
-      ],
-      in_progress: [
-        {
-          id: 'progress_1',
-          material: 'glass',
-          materialName: 'Vidro',
-          materialColor: '#00FF84',
-          materialIcon: '🍾',
-          address: 'Rua Augusta, 789 - Consolação, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/00FF84/FFFFFF?text=Garrafas+de+Vidro',
-          distance: 1.8,
-          points: 100,
-          status: 'in_progress' as const,
-          createdAt: '2024-01-15T09:45:00Z',
-          coordinates: { latitude: -23.5475, longitude: -46.6405 },
-          user: {
-            name: 'Pedro Costa',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=PC'
-          }
-        },
-        {
-          id: 'progress_2',
-          material: 'plastic',
-          materialName: 'Plástico',
-          materialColor: '#FF6B00',
-          materialIcon: '🥤',
-          address: 'Rua Haddock Lobo, 456 - Cerqueira César, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/FF6B00/FFFFFF?text=Embalagens+Plásticas',
-          distance: 0.5,
-          points: 75,
-          status: 'in_progress' as const,
-          createdAt: '2024-01-15T14:30:00Z',
-          coordinates: { latitude: -23.5613, longitude: -46.6565 },
-          user: {
-            name: 'Carlos Mendes',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=CM'
-          }
-        }
-      ],
-      completed: [
-        {
-          id: 'completed_1',
-          material: 'paper',
-          materialName: 'Papel',
-          materialColor: '#00D1FF',
-          materialIcon: '📄',
-          address: 'Rua da Consolação, 1000 - Centro, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/00D1FF/FFFFFF?text=Jornais+e+Revistas',
-          distance: 0,
-          points: 50,
-          status: 'completed' as const,
-          createdAt: '2024-01-14T16:20:00Z',
-          coordinates: { latitude: -23.5475, longitude: -46.6405 },
-          user: {
-            name: 'Fernanda Lima',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=FL'
-          }
-        },
-        {
-          id: 'completed_2',
-          material: 'glass',
-          materialName: 'Vidro',
-          materialColor: '#00FF84',
-          materialIcon: '🍾',
-          address: 'Av. Faria Lima, 2000 - Itaim Bibi, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/00FF84/FFFFFF?text=Potes+de+Vidro',
-          distance: 0,
-          points: 100,
-          status: 'completed' as const,
-          createdAt: '2024-01-14T10:15:00Z',
-          coordinates: { latitude: -23.5687, longitude: -46.6693 },
-          user: {
-            name: 'Roberto Alves',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=RA'
-          }
-        },
-        {
-          id: 'completed_3',
-          material: 'metal',
-          materialName: 'Metal',
-          materialColor: '#FFD600',
-          materialIcon: '🥫',
-          address: 'Rua Bela Cintra, 500 - Jardins, São Paulo',
-          photo: 'https://via.placeholder.com/300x200/FFD600/FFFFFF?text=Latas+de+Refrigerante',
-          distance: 0,
-          points: 60,
-          status: 'completed' as const,
-          createdAt: '2024-01-13T14:45:00Z',
-          coordinates: { latitude: -23.5687, longitude: -46.6693 },
-          user: {
-            name: 'Lucia Ferreira',
-            avatar: 'https://via.placeholder.com/50x50/00FF84/FFFFFF?text=LF'
-          }
-        }
-      ]
-    };
-
-    return baseCollections[status];
-  };
+  
 
   useEffect(() => {
     loadCollections();
@@ -234,20 +79,41 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
 
   const loadCollections = async () => {
     try {
-      // Buscar TODAS as coletas do backend e filtrar por status na UI
-      const backendCollections = await collectorService.getAllCollections();
-      const convertedCollections = collectorService.convertCollectionsForScreen(backendCollections, userLocation ?? undefined);
+      let convertedCollections: Collection[] = [];
+      if (selectedFilter === 'pending') {
+        try {
+          const available = await collectorService.getCollectionsByStatus('Solicitada');
+          convertedCollections = collectorService.convertCollectionsForScreen(available, userLocation ?? undefined) as any;
+        } catch {
+          const all = await collectorService.getAllCollections();
+          convertedCollections = collectorService.convertCollectionsForScreen(all, userLocation ?? undefined) as any;
+        }
+      } else if (selectedFilter === 'in_progress') {
+        try {
+          const accepted = await collectorService.getCollectionsByStatus('Em andamento');
+          convertedCollections = collectorService.convertCollectionsForScreen(accepted, userLocation ?? undefined) as any;
+        } catch {
+          const all = await collectorService.getAllCollections();
+          convertedCollections = collectorService.convertCollectionsForScreen(all, userLocation ?? undefined) as any;
+        }
+      } else {
+        try {
+          const finalized = await collectorService.getCollectionsByStatus('Finalizada');
+          convertedCollections = collectorService.convertCollectionsForScreen(finalized, userLocation ?? undefined) as any;
+        } catch {
+          const all = await collectorService.getAllCollections();
+          convertedCollections = collectorService.convertCollectionsForScreen(all, userLocation ?? undefined) as any;
+        }
+      }
 
       const filtered = convertedCollections.filter(c => c.status === selectedFilter);
-      const mockCollections = getMockCollectionsByStatus(selectedFilter);
-      const finalCollections = filtered.length > 0 ? filtered : mockCollections;
-        
-      setCollections(finalCollections);
+
+      // Não carregar tokens do AsyncStorage - informação confidencial
+      // Os tokens não devem ser exibidos no frontend
+      setCollections(filtered);
     } catch (error) {
       console.error('Erro ao carregar coletas:', error);
-      // Em caso de erro, usar mockups
-      const mockCollections = getMockCollectionsByStatus(selectedFilter);
-      setCollections(mockCollections);
+      setCollections([]);
     }
   };
 
@@ -273,11 +139,11 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
 
   const getMaterialPoints = (materialType: string): number => {
     switch (materialType) {
-      case 'paper': return 50;
-      case 'glass': return 100;
-      case 'metal': return 60;
-      case 'plastic': return 75;
-      default: return 50;
+      case 'paper': return 4;
+      case 'glass': return 12;
+      case 'metal': return 8;
+      case 'plastic': return 10;
+      default: return 0;
     }
   };
 
@@ -359,7 +225,7 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
 
     const collection = collections.find(c => c.id === collectionId);
     if (!collection) return;
-
+    
     const isNear = isUserNearCollection(userLocation, collection.coordinates, 0.050);
     
     if (!isNear) {
@@ -374,9 +240,10 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
 
     // Quando a distância permitir, aceitar coleta e gerar token automaticamente
     try {
-      // 1. Aceitar a coleta no backend primeiro
+      // 1. Aceitar a coleta no backend
+      // O backend pega o coletor_id automaticamente do token JWT
       const success = await collectorService.assignCollectorToCollection(
-        collectionId, 
+        collectionId
       );
 
       if (!success) {
@@ -387,7 +254,13 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
       // 2. Gerar o token automaticamente após aceitar a coleta
       let generatedToken: string | null = null;
       try {
+        console.log('Gerando token para coleta:', collectionId);
         const tokenResponse = await tokenApi.gerarToken(collectionId);
+        
+        if (!tokenResponse || !tokenResponse.token) {
+          throw new Error('Token não retornado pelo servidor');
+        }
+        
         generatedToken = tokenResponse.token;
         
         // Validar formato do token (máximo 7 dígitos, apenas números)
@@ -397,12 +270,18 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
         
         // 3. Armazenar token no AsyncStorage associado à coleta
         await AsyncStorage.setItem(`token_${collectionId}`, generatedToken);
-        console.log(`Token gerado e armazenado para coleta ${collectionId}`);
+        console.log(`Token ${generatedToken} gerado e armazenado para coleta ${collectionId}`);
       } catch (tokenError: any) {
         console.error('Erro ao gerar token:', tokenError);
+        console.error('Detalhes do erro:', {
+          message: tokenError.message,
+          response: tokenError.response?.data,
+          status: tokenError.response?.status
+        });
+        
         Alert.alert(
           'Erro ao gerar token',
-          'A coleta foi aceita, mas não foi possível gerar o token. Tente finalizar a coleta mais tarde.',
+          tokenError.message || 'A coleta foi aceita, mas não foi possível gerar o token. Tente finalizar a coleta mais tarde.',
           [{ text: 'OK' }]
         );
         // Mesmo com erro no token, atualiza o estado da coleta
@@ -417,6 +296,7 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
       }
 
       // 4. Atualizar estado da coleta com status 'in_progress'
+      // NÃO associar token ao estado - informação confidencial
       setCollections(prev => 
         prev.map(collection => 
           collection.id === collectionId 
@@ -614,6 +494,16 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
               Solicitado por {collection.user.name}
             </Text>
           </View>
+
+          {collection.status === 'in_progress' && (
+            <View style={collectorScreenStyles.infoRow}>
+              <Ionicons name="pricetag" size={16} color="#00D1FF" />
+              <Text style={collectorScreenStyles.userText}>
+                Coleta ID: {String(collection.coleta_id ?? collection.id)}
+              </Text>
+            </View>
+          )}
+          
         </View>
 
         {/* Botões de Ação */}
@@ -622,14 +512,14 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
             <TouchableOpacity
               style={[
                 collectorScreenStyles.acceptButton,
-                (!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 2.0)) && 
+                (!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 0.050)) && 
                 collectorScreenStyles.disabledButton
               ]}
               onPress={() => handleAcceptCollection(collection.id)}
-              disabled={!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 2.0)}
+              disabled={!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 0.050)}
             >
               <LinearGradient
-                colors={(!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 2.0)) 
+                colors={(!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 0.050)) 
                   ? ['#666', '#555'] 
                   : ['#00FF84', '#00E676']
                 }
@@ -640,16 +530,16 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
                 <Ionicons 
                   name={!userLocation ? "location" : "checkmark"} 
                   size={20} 
-                  color={(!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 2.0)) ? "#999" : "#000"} 
+                  color={(!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 0.050)) ? "#999" : "#000"} 
                 />
                 <Text style={[
                   collectorScreenStyles.acceptButtonText,
-                  (!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 2.0)) && 
+                  (!userLocation || !isUserNearCollection(userLocation, collection.coordinates, 0.050)) && 
                   collectorScreenStyles.disabledButtonText
                 ]}>
                   {!userLocation 
                     ? 'Localização necessária' 
-                    : !isUserNearCollection(userLocation, collection.coordinates, 2.0)
+                    : !isUserNearCollection(userLocation, collection.coordinates, 0.050)
                     ? 'Muito distante'
                     : 'Aceitar Coleta'
                   }
@@ -752,7 +642,7 @@ export default function CollectorScreen({ navigation }: CollectorScreenProps) {
   };
 
   return (
-    <SafeAreaView style={collectorScreenStyles.container}>
+    <SafeAreaView style={collectorScreenStyles.container} edges={[]}>
       
       {/* Background Pattern */}
       <View style={collectorScreenStyles.backgroundPattern} />

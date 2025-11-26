@@ -161,3 +161,13 @@ export const finalizarColetaScreenStyles = StyleSheet.create({
   },
 });
 
+
+
+
+
+
+
+
+
+
+

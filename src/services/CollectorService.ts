@@ -7,6 +7,7 @@ export type ScreenCollectionStatus = 'pending' | 'in_progress' | 'completed';
 
 export interface ScreenCollection {
   id: string;
+  coleta_id?: string;
   material: string;
   materialName: string;
   materialColor: string;
@@ -51,56 +52,152 @@ class CollectorService {
 
   /** Buscar por status */
   async getCollectionsByStatus(status: 'Solicitada' | 'Em andamento' | 'Finalizada'): Promise<CollectionRequest[]> {
-
     if (status === 'Solicitada') {
-      const r = await api.get('/coleta/disponiveis');
-      const p = r.data;
-      if (Array.isArray(p)) return p;
-      if (Array.isArray(p?.data)) return p.data;
-      return [];
+      try {
+        const r = await api.get('/coleta/disponiveis');
+        const p = r.data;
+        if (Array.isArray(p)) return p;
+        if (Array.isArray(p?.data)) return p.data;
+        return [];
+      } catch (err) {
+        try {
+          const r2 = await api.get('/coleta');
+          const p2 = r2.data;
+          const list = Array.isArray(p2) ? p2 : (Array.isArray(p2?.data) ? p2.data : []);
+          return list.filter((c: any) => /Solicitada|pendente/i.test(String(c.status)));
+        } catch {
+          return [];
+        }
+      }
     }
 
     if (status === 'Em andamento') {
-      const r = await api.get('/coleta/aceitas');
-      const p = r.data;
-      if (Array.isArray(p)) return p;
-      if (Array.isArray(p?.data)) return p.data;
-      return [];
+      try {
+        // Backend retorna apenas coletas do coletor autenticado (filtradas por coletor_id)
+        const r = await api.get('/coleta/aceitas');
+        const p = r.data;
+        if (Array.isArray(p)) return p;
+        if (Array.isArray(p?.data)) return p.data;
+        return [];
+      } catch (err) {
+        console.warn('Erro ao buscar coletas aceitas, tentando fallback:', err);
+        try {
+          // Fallback: buscar todas e filtrar por status
+          const r2 = await api.get('/coleta');
+          const p2 = r2.data;
+          const list = Array.isArray(p2) ? p2 : (Array.isArray(p2?.data) ? p2.data : []);
+          // Filtrar por status 'em_andamento' ou 'Em andamento' ou 'aceita'
+          return list.filter((c: any) => {
+            const statusStr = String(c.status || '').toLowerCase();
+            return /em_andamento|em andamento|aceita/i.test(statusStr);
+          });
+        } catch {
+          return [];
+        }
+      }
     }
 
     if (status === 'Finalizada') {
-      const r = await api.get('/coleta');
-      const p = r.data;
-      const list = Array.isArray(p) ? p : (Array.isArray(p?.data) ? p.data : []);
-      return list.filter((c: any) => /finalizada|conclu[ií]da/i.test(String(c.status)));
+      try {
+        const r = await api.get('/coleta');
+        const p = r.data;
+        const list = Array.isArray(p) ? p : (Array.isArray(p?.data) ? p.data : []);
+        return list.filter((c: any) => /finalizada|conclu[ií]da/i.test(String(c.status)));
+      } catch (err) {
+        try {
+          const r2 = await api.get('/coletas');
+          const p2 = r2.data;
+          const list2 = Array.isArray(p2) ? p2 : (Array.isArray(p2?.data) ? p2.data : []);
+          return list2.filter((c: any) => /finalizada|conclu[ií]da/i.test(String(c.status)));
+        } catch {
+          return [];
+        }
+      }
     }
 
     return [];
   }
 
-  /** Aceitar coleta */
+  /** Aceitar coleta - envia apenas coletaId, o backend pega coletor_id do token JWT */
   async assignCollectorToCollection(collectionId: string): Promise<boolean> {
-    try {
-      const response = await api.post('/coleta/aceitar', {
-        coletaId: collectionId
-      });
+    // O backend agora pega o coletor_id automaticamente do token JWT
+    // Enviamos apenas o coletaId
+    const payload: any = {
+      coletaId: String(collectionId),
+      // aliases para máxima compatibilidade com diferentes formatos
+      coleta_id: String(collectionId),
+      id_coleta: String(collectionId),
+      idColeta: String(collectionId),
+    };
 
-      return response.status === 200;
-    } catch (error: any) {
-      console.error('Erro ao aceitar coleta:', error);
+    try {
+      console.log('Enviando requisição para aceitar coleta:', { collectionId, payload });
+      const r = await api.post('/coleta/aceitar', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log('Resposta do backend ao aceitar coleta:', { status: r.status, data: r.data });
+      if (r.status === 200 || r.status === 201) {
+        console.log('✅ Coleta aceita com sucesso. Backend associou coletor_id automaticamente.');
+        return true;
+      }
+      console.warn('Status HTTP inesperado ao aceitar coleta:', r.status);
+      return false;
+    } catch (e: any) {
+      console.error('❌ Falha na rota /coleta/aceitar:');
+      console.error('  - Status:', e?.response?.status);
+      console.error('  - Data:', e?.response?.data);
+      console.error('  - Message:', e?.message);
+      console.error('  - Erro completo:', e);
       return false;
     }
   }
 
-  /** Finalizar coleta */
+  /** Finalizar coleta - usa rota POST /coleta/:id/finalizar */
   async completeCollection(collectionId: string, note: string): Promise<boolean> {
+    const payload: any = {
+      status: 'finalizada',
+      observacao: note || 'Coleta finalizada',
+      note: note || 'Coleta finalizada',
+    };
+
     try {
-      const response = await api.post(`/coleta/${collectionId}/finalizar`, { note });
-      return response.status === 200;
-    } catch (error) {
-      console.error('Erro ao finalizar coleta:', error);
-      return false;
+      console.log('Enviando requisição para finalizar coleta:', { collectionId, payload });
+      // Tenta primeiro a rota POST /coleta/:id/finalizar
+      const r1 = await api.post(`/coleta/${collectionId}/finalizar`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      console.log('Resposta do backend ao finalizar coleta (POST):', { status: r1.status, data: r1.data });
+      if (r1.status === 200 || r1.status === 201) {
+        console.log('✅ Coleta finalizada com sucesso via POST /coleta/:id/finalizar');
+        return true;
+      }
+      console.warn('Status HTTP inesperado ao finalizar coleta (POST):', r1.status);
+    } catch (e1: any) {
+      console.warn('❌ Falha na rota POST /coleta/:id/finalizar:');
+      console.warn('  - Status:', e1?.response?.status);
+      console.warn('  - Data:', e1?.response?.data);
+      console.warn('  - Message:', e1?.message);
+      console.warn('Tentando fallback PUT /coleta/:id...');
+      // Fallback: tenta rota PUT /coleta/:id
+      try {
+        const r2 = await api.put(`/coleta/${collectionId}`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        console.log('Resposta do backend ao finalizar coleta (PUT):', { status: r2.status, data: r2.data });
+        if (r2.status === 200 || r2.status === 201) {
+          console.log('✅ Coleta finalizada com sucesso via PUT /coleta/:id');
+          return true;
+        }
+        console.warn('Status HTTP inesperado ao finalizar coleta (PUT):', r2.status);
+      } catch (e2: any) {
+        console.error('❌ Falha na rota PUT /coleta/:id:');
+        console.error('  - Status:', e2?.response?.status);
+        console.error('  - Data:', e2?.response?.data);
+        console.error('  - Message:', e2?.message);
+        return false;
+      }
     }
+    return false;
   }
 
   /** Converter para exibição */
@@ -130,16 +227,31 @@ class CollectorService {
         photo = `${base}/uploads/${collection.arquivo_coleta}`;
       }
 
-      const status = /Solicitada|pendente/i.test(collection.status)
-        ? 'pending'
-        : /Em andamento|aceita/i.test(collection.status)
-          ? 'in_progress'
-          : /finalizada|conclu[ií]da/i.test(collection.status)
-            ? 'completed'
-            : 'completed';
+      // Mapear status do backend para o formato do frontend
+      // Backend retorna: 'pendente', 'em_andamento', 'finalizada'
+      // Frontend usa: 'pending', 'in_progress', 'completed'
+      const statusRaw = String(collection.status || '').toLowerCase();
+      const status = 
+        /pendente|solicitada/i.test(statusRaw)
+          ? 'pending'
+          : /em_andamento|em andamento|aceita|in_progress/i.test(statusRaw)
+            ? 'in_progress'
+            : /finalizada|conclu[ií]da|completed/i.test(statusRaw)
+              ? 'completed'
+              : 'completed';
 
       return {
-        id: String(collection.id ?? collection.coleta_id ?? ''),
+        id: String(
+          collection.id 
+          ?? collection.coleta_id 
+          ?? collection.coletaId 
+          ?? collection.id_coleta 
+          ?? collection.idColeta 
+          ?? ''
+        ),
+        coleta_id: String(
+          collection.coleta_id ?? collection.coletaId ?? collection.id_coleta ?? collection.idColeta ?? collection.id ?? ''
+        ),
         material: normType,
         materialName: this.materialDisplayName(normType),
         materialColor: this.getMaterialColor(normType),

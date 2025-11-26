@@ -36,8 +36,12 @@ export default function FinalizarColetaScreen({ navigation, route }: any) {
   const [isFinalized, setIsFinalized] = useState(false);
 
   useEffect(() => {
-    // Não pré-preencher o token para não expor ao coletor
-  }, [coletaId]);
+    // Verificar se a coleta já foi finalizada ao entrar na tela
+    // Se não tiver coletaId, voltar
+    if (!coletaId) {
+      navigation.goBack();
+    }
+  }, [coletaId, navigation]);
 
   const loadSavedToken = async () => {};
 
@@ -98,48 +102,89 @@ export default function FinalizarColetaScreen({ navigation, route }: any) {
     setSuccess(false);
 
     try {
-      // Validar token na API
-      const response = await tokenApi.validarToken(coletaId, cleanToken);
-
-      if (response.success) {
-        setSuccess(true);
-        setIsFinalized(true);
-        
-        // Finalizar a coleta no serviço
-        try {
-          await collectorService.completeCollection(coletaId, 'Coleta finalizada com token válido');
-          
-          // Remover token do AsyncStorage após validação bem-sucedida
-          await AsyncStorage.removeItem(`token_${coletaId}`);
-          
-          Alert.alert(
-            'Sucesso!',
-            'Token válido! Coleta finalizada com sucesso.',
-            [
-              {
-                text: 'OK',
-                onPress: () => {
-                  navigation.goBack();
-                }
-              }
-            ]
-          );
-        } catch (completeError) {
-          console.error('Erro ao finalizar coleta:', completeError);
-          // Mesmo com erro ao finalizar, o token foi validado
-          Alert.alert(
-            'Token válido!',
-            'O token foi validado com sucesso, mas houve um erro ao finalizar a coleta. Tente novamente.',
-            [{ text: 'OK' }]
-          );
-        }
-      } else {
-        setError(response.message || 'Token inválido ou já usado.');
+      // 1. Primeiro validar o token na API
+      console.log('=== INICIANDO VALIDAÇÃO DE TOKEN ===');
+      console.log('Coleta ID:', coletaId);
+      console.log('Token digitado:', cleanToken);
+      
+      let response: any;
+      try {
+        response = await tokenApi.validarToken(coletaId, cleanToken);
+        console.log('Resposta da validação recebida:', response);
+      } catch (validationError: any) {
+        console.error('Erro na validação do token:', validationError);
+        setError(validationError.message || 'Token inválido.');
+        setIsValidating(false);
+        return;
       }
+
+      // Verificar se a resposta indica sucesso
+      // IMPORTANTE: Apenas aceita se response.success for explicitamente true
+      const isValid = response?.success === true;
+      
+      console.log('Token válido?', isValid);
+      console.log('Resposta completa:', JSON.stringify(response, null, 2));
+      console.log('response.success:', response?.success);
+      console.log('response.message:', response?.message);
+
+      // Se não for válido, mostra o erro e PARA o processo
+      if (!isValid) {
+        const errorMsg = response?.message || 'Token inválido. Verifique o token digitado.';
+        console.error('❌ Token inválido. Mensagem:', errorMsg);
+        setError(errorMsg);
+        setIsValidating(false);
+        return; // IMPORTANTE: Para aqui se o token não for válido
+      }
+      
+      console.log('✅ Token validado com sucesso pelo backend!');
+
+      // 2. Se o token for válido, finalizar a coleta no backend
+      console.log('=== FINALIZANDO COLETA ===');
+      console.log('Coleta ID:', coletaId);
+      
+      const finalizeSuccess = await collectorService.completeCollection(
+        coletaId,
+        'Coleta finalizada com token válido'
+      );
+
+      console.log('Resultado da finalização:', finalizeSuccess);
+
+      if (!finalizeSuccess) {
+        throw new Error('Não foi possível finalizar a coleta no servidor. Verifique se a coleta existe e está em andamento.');
+      }
+
+      // 3. Remover token do AsyncStorage após validação e finalização bem-sucedidas
+      await AsyncStorage.removeItem(`token_${coletaId}`);
+      console.log('Token removido do AsyncStorage');
+      
+      // 4. Atualizar estado local
+      setSuccess(true);
+      setIsFinalized(true);
+      
+      console.log('=== COLETA FINALIZADA COM SUCESSO ===');
+      
+      // 5. Mostrar mensagem de sucesso e redirecionar
+      Alert.alert(
+        'Sucesso!',
+        'Token válido! Coleta finalizada com sucesso e enviada para a lista de finalizadas.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Voltar para a tela anterior (Collector) sem abrir a tela de token novamente
+              navigation.goBack();
+            }
+          }
+        ]
+      );
     } catch (error: any) {
-      console.error('Erro ao validar token:', error);
-      setError(error.message || 'Erro ao validar token. Verifique sua conexão e tente novamente.');
-    } finally {
+      console.error('=== ERRO AO FINALIZAR COLETA ===');
+      console.error('Erro completo:', error);
+      console.error('Mensagem:', error.message);
+      console.error('Stack:', error.stack);
+      
+      const errorMessage = error.message || 'Erro ao validar token ou finalizar coleta. Verifique sua conexão e tente novamente.';
+      setError(errorMessage);
       setIsValidating(false);
     }
   };
@@ -175,7 +220,7 @@ export default function FinalizarColetaScreen({ navigation, route }: any) {
 
   if (isValidating) {
     return (
-      <SafeAreaView style={finalizarColetaScreenStyles.container}>
+      <SafeAreaView style={finalizarColetaScreenStyles.container} edges={[]}>
         <View style={finalizarColetaScreenStyles.backgroundPattern} />
         {renderHeader()}
         <View style={finalizarColetaScreenStyles.loadingContainer}>
@@ -189,7 +234,7 @@ export default function FinalizarColetaScreen({ navigation, route }: any) {
   }
 
   return (
-    <SafeAreaView style={finalizarColetaScreenStyles.container}>
+    <SafeAreaView style={finalizarColetaScreenStyles.container} edges={[]}>
       <View style={finalizarColetaScreenStyles.backgroundPattern} />
       {renderHeader()}
       <ScrollView
@@ -223,7 +268,7 @@ export default function FinalizarColetaScreen({ navigation, route }: any) {
               autoFocus={!token}
             />
             <Text style={finalizarColetaScreenStyles.tokenHint}>
-              Token deve ter no máximo 7 dígitos numéricos
+              Token deve ter no máximo 6 dígitos numéricos
             </Text>
             {error ? (
               <Text style={finalizarColetaScreenStyles.errorText}>

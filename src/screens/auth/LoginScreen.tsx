@@ -62,9 +62,12 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const handleCreateAccount = () => {
     navigation.navigate('UserType');
   };
+  const handleAdminLogin = () => {
+    navigation.navigate('AdminLogin');
+  };
 
   return (
-    <SafeAreaView style={loginScreenStyles.container}>
+    <SafeAreaView style={loginScreenStyles.container} edges={[]}>
 
       {/* Background Pattern */}
       <View style={loginScreenStyles.backgroundPattern} />
@@ -161,6 +164,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <Text style={loginScreenStyles.createAccountText}>Criar uma conta</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={loginScreenStyles.createAccountContainer}
+          onPress={handleAdminLogin}
+        >
+          <Text style={loginScreenStyles.createAccountText}>Entrar como admin</Text>
+        </TouchableOpacity>
+
         {/* Rodapé */}
         <View style={loginScreenStyles.footer}>
           <Text style={loginScreenStyles.footerText}>
@@ -172,5 +182,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         </View>
       </ScrollView>
     </SafeAreaView>
+    
   );
+  
 }

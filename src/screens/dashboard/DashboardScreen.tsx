@@ -45,22 +45,29 @@ export default function DashboardScreen({ navigation }: any) {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [profile, scoreHistory, progress, userAchievements, history] =
+      const [profile, scoreHistory, progress, userAchievements, history, totalScore] =
         await Promise.all([
           userService.getProfile(),
           userService.getScoreHistory(),
           userService.getProgress(),
           userService.getAchievements(),
           userService.getChartData(),
+          userService.getTotalScore(),
         ]);
 
       setUserProfile(profile);
-      setUserScore(
-        scoreHistory.reduce((acc: number, item: any) => acc + item.pontos, 0)
-      );
-      setMonthlyProgress(progress.percentual || 0);
-      setAchievements(userAchievements);
-      setChartData(history);
+      
+      // Usar a pontuação total retornada pela função getTotalScore
+      // Ela busca do perfil primeiro, depois calcula do histórico se necessário
+      console.log("📊 Pontuação total recebida:", totalScore);
+      console.log("📊 Perfil do usuário completo:", JSON.stringify(profile, null, 2));
+      console.log("📊 Histórico de pontuação:", scoreHistory);
+      console.log("📊 Dados do gráfico:", history);
+      
+      setUserScore(totalScore);
+      setMonthlyProgress(progress?.percentual || 0);
+      setAchievements(Array.isArray(userAchievements) ? userAchievements : []);
+      setChartData(Array.isArray(history) ? history : []);
     } catch (error: any) {
       console.error("❌ Erro ao buscar dados do usuário:", error);
       if (error.message === "Usuário não autenticado") {
@@ -131,6 +138,9 @@ export default function DashboardScreen({ navigation }: any) {
               {userScore} pts
             </Animated.Text>
             <Text style={dashboardScreenStyles.scoreSubtext}>
+              Pontuação Total
+            </Text>
+            <Text style={dashboardScreenStyles.scoreSubtext}>
               +{monthlyProgress}% este mês
             </Text>
           </View>
@@ -150,37 +160,50 @@ export default function DashboardScreen({ navigation }: any) {
     </Animated.View>
   );
 
-  const renderChart = () => (
-    <View style={dashboardScreenStyles.chartContainer}>
-      <Text style={dashboardScreenStyles.chartTitle}>
-        Evolução da Pontuação
-      </Text>
-      <View style={dashboardScreenStyles.chart}>
-        {chartData.map((item, index) => (
-          <View key={index} style={dashboardScreenStyles.chartBar}>
-            <View
-              style={[
-                dashboardScreenStyles.bar,
-                {
-                  height: Math.min((item.pontos / 500) * 100, 100),
-                  backgroundColor:
-                    index === chartData.length - 1 ? "#00FF84" : "#00D1FF",
-                  shadowColor:
-                    index === chartData.length - 1 ? "#00FF84" : "#00D1FF",
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.5,
-                  shadowRadius: 8,
-                  elevation: 5,
-                },
-              ]}
-            />
-            <Text style={dashboardScreenStyles.barLabel}>{item.semana}</Text>
-            <Text style={dashboardScreenStyles.barValue}>{item.pontos}</Text>
-          </View>
-        ))}
+  const renderChart = () => {
+    // Garante que chartData sempre seja um array
+    const safeChartData = Array.isArray(chartData) ? chartData : [];
+    
+    return (
+      <View style={dashboardScreenStyles.chartContainer}>
+        <Text style={dashboardScreenStyles.chartTitle}>
+          Evolução da Pontuação
+        </Text>
+        <View style={dashboardScreenStyles.chart}>
+          {safeChartData.length > 0 ? (
+            safeChartData.map((item, index) => (
+              <View key={index} style={dashboardScreenStyles.chartBar}>
+                <View
+                  style={[
+                    dashboardScreenStyles.bar,
+                    {
+                      height: Math.min((item.pontos / 500) * 100, 100),
+                      backgroundColor:
+                        index === safeChartData.length - 1 ? "#00FF84" : "#00D1FF",
+                      shadowColor:
+                        index === safeChartData.length - 1 ? "#00FF84" : "#00D1FF",
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 8,
+                      elevation: 5,
+                    },
+                  ]}
+                />
+                <Text style={dashboardScreenStyles.barLabel}>{item.semana}</Text>
+                <Text style={dashboardScreenStyles.barValue}>{item.pontos}</Text>
+              </View>
+            ))
+          ) : (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#999', fontSize: 14 }}>
+                Nenhum dado de histórico disponível
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderAchievements = () => (
     <View style={dashboardScreenStyles.achievementsContainer}>
@@ -273,7 +296,7 @@ export default function DashboardScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <SafeAreaView style={dashboardScreenStyles.container}>
+      <SafeAreaView style={dashboardScreenStyles.container} edges={[]}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color="#00FF84" />
           <Text style={{ marginTop: 10 }}>Carregando dados...</Text>
@@ -283,7 +306,7 @@ export default function DashboardScreen({ navigation }: any) {
   }
 
   return (
-    <SafeAreaView style={dashboardScreenStyles.container}>
+    <SafeAreaView style={dashboardScreenStyles.container} edges={[]}>
       <View style={dashboardScreenStyles.backgroundPattern} />
       {renderHeader()}
       <ScrollView

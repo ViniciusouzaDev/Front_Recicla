@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,14 @@ import {
   Image,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import logo from '../../../assets/Logo_recicla.png';
 import { commonStyles } from '../../styles/shared/CommonStyles';
 import ShareButton from '../../components/ShareButton';
+import { userService } from '../../services/userService';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -22,31 +24,103 @@ interface ProfileScreenProps {
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [userData, setUserData] = useState({
-    name: 'João Silva',
-    email: 'joao.silva@email.com',
-    userType: 'user', // 'user' ou 'company'
-    phone: '(11) 99999-9999',
-    address: 'Rua das Flores, 123',
+    name: '',
+    email: '',
+    userType: 'user' as 'user' | 'company',
+    phone: '',
+    address: '',
   });
 
   const [formData, setFormData] = useState(userData);
 
-  // TODO: Implementar upload de foto de perfil
-  // TODO: Conectar com backend para persistir dados
-  // TODO: Implementar validação de formulário
-  // TODO: Adicionar campos de preferências do usuário
-  // TODO: Implementar sistema de notificações do usuário
+  useEffect(() => {
+    carregarPerfil();
+  }, []);
+
+  const carregarPerfil = async () => {
+    try {
+      setLoading(true);
+      console.log("📥 Carregando perfil do usuário...");
+      
+      const profile = await userService.getProfile();
+      console.log("✅ Perfil carregado:", JSON.stringify(profile, null, 2));
+      
+      const dadosFormatados = {
+        name: profile.nome || '',
+        email: profile.email || '',
+        userType: (profile.nivel_conta === 'empresa' ? 'company' : 'user') as 'user' | 'company',
+        phone: profile.telefone || '',
+        address: profile.endereco || '',
+      };
+      
+      setUserData(dadosFormatados);
+      setFormData(dadosFormatados);
+      
+      console.log("✅ Dados formatados e salvos no estado");
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar perfil:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados do perfil.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
     setFormData(userData);
   };
 
-  const handleSave = () => {
-    setUserData(formData);
-    setIsEditing(false);
-    Alert.alert('Sucesso', 'Informações atualizadas com sucesso!');
+  const handleSave = async () => {
+    try {
+      // Validação básica
+      if (!formData.name.trim()) {
+        Alert.alert('Erro', 'O nome é obrigatório.');
+        return;
+      }
+
+      if (!formData.email.trim()) {
+        Alert.alert('Erro', 'O e-mail é obrigatório.');
+        return;
+      }
+
+      setSaving(true);
+      console.log("💾 Salvando alterações do perfil...");
+      console.log("📝 Dados a serem salvos:", JSON.stringify(formData, null, 2));
+
+      // Prepara os dados para enviar ao backend
+      const dadosParaSalvar = {
+        nome: formData.name.trim(),
+        email: formData.email.trim(),
+        telefone: formData.phone.trim() || null,
+        endereco: formData.address.trim() || null,
+      };
+
+      const perfilAtualizado = await userService.updateProfile(dadosParaSalvar);
+      console.log("✅ Perfil atualizado com sucesso:", JSON.stringify(perfilAtualizado, null, 2));
+
+      // Atualiza o estado local com os dados retornados
+      const dadosFormatados = {
+        name: perfilAtualizado.nome || formData.name,
+        email: perfilAtualizado.email || formData.email,
+        userType: (perfilAtualizado.nivel_conta === 'empresa' ? 'company' : 'user') as 'user' | 'company',
+        phone: perfilAtualizado.telefone || formData.phone,
+        address: perfilAtualizado.endereco || formData.address,
+      };
+
+      setUserData(dadosFormatados);
+      setFormData(dadosFormatados);
+      setIsEditing(false);
+
+      Alert.alert('Sucesso', 'Informações atualizadas com sucesso!');
+    } catch (error: any) {
+      console.error('❌ Erro ao salvar perfil:', error);
+      Alert.alert('Erro', error.message || 'Não foi possível salvar as alterações. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -54,13 +128,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     setFormData(userData);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Sair',
       'Tem certeza que deseja sair da sua conta?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: () => navigation.navigate('Login') }
+        { 
+          text: 'Sair', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              const { logout } = await import('../../services/authService');
+              await logout();
+              navigation.replace('Login');
+            } catch (error) {
+              console.error('Erro ao fazer logout:', error);
+              navigation.replace('Login');
+            }
+          }
+        }
       ]
     );
   };
@@ -98,8 +185,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             </View>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{userData.name}</Text>
-            <Text style={styles.profileEmail}>{userData.email}</Text>
+            <Text style={styles.profileName}>{userData.name || 'Carregando...'}</Text>
+            <Text style={styles.profileEmail}>{userData.email || ''}</Text>
             <View style={styles.userTypeBadge}>
               <Text style={styles.userTypeText}>
                 {userData.userType === 'company' ? 'Empresa' : 'Usuário Comum'}
@@ -171,11 +258,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     <View style={styles.actionButtons}>
       {isEditing ? (
         <>
-          <TouchableOpacity style={[commonStyles.secondaryButton, styles.button]} onPress={handleCancel}>
+          <TouchableOpacity 
+            style={[commonStyles.secondaryButton, styles.button]} 
+            onPress={handleCancel}
+            disabled={saving}
+          >
             <Text style={commonStyles.buttonText}>Cancelar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[commonStyles.primaryButton, styles.button]} onPress={handleSave}>
-            <Text style={commonStyles.buttonText}>Salvar</Text>
+          <TouchableOpacity 
+            style={[commonStyles.primaryButton, styles.button, saving && { opacity: 0.6 }]} 
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                <Text style={commonStyles.buttonText}>Salvando...</Text>
+              </View>
+            ) : (
+              <Text style={commonStyles.buttonText}>Salvar</Text>
+            )}
           </TouchableOpacity>
         </>
       ) : (
@@ -199,8 +301,21 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={commonStyles.container} edges={[]}>
+        <View style={commonStyles.backgroundPattern} />
+        {renderHeader()}
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#00FF84" />
+          <Text style={{ marginTop: 10, color: '#00D1FF' }}>Carregando perfil...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={commonStyles.container}>
+    <SafeAreaView style={commonStyles.container} edges={[]}>
       
       <View style={commonStyles.backgroundPattern} />
       

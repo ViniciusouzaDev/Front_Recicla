@@ -144,7 +144,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 };
 
   return (
-    <SafeAreaView style={registerScreenStyles.container}>
+    <SafeAreaView style={registerScreenStyles.container} edges={[]}>
       <View style={registerScreenStyles.backgroundPattern} />
 
       <ScrollView contentContainerStyle={registerScreenStyles.scrollContainer} showsVerticalScrollIndicator={false}>

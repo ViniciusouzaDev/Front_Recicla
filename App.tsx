@@ -23,10 +23,12 @@ import { ThemeProvider } from './src/contexts/ThemeContext';
 
 // Fullscreen / NavigationBar
 import * as NavigationBar from 'expo-navigation-bar';
+import AdminLoginScreen from './src/screens/admin/AdminLoginScreen';
+import AdminTokensScreen from './src/screens/admin/AdminTokensScreen';
 
 const Stack = createStackNavigator();
 
-// Função para esconder a StatusBar
+// Função para esconder completamente a StatusBar (barra superior)
 const hideStatusBar = () => {
   StatusBar.setHidden(true, 'none');
   if (Platform.OS === 'android') {
@@ -36,48 +38,77 @@ const hideStatusBar = () => {
   }
 };
 
+// Função para esconder a NavigationBar (barra inferior no Android)
+// Nota: Com edge-to-edge habilitado, alguns métodos não são suportados
+const hideNavigationBar = async () => {
+  if (Platform.OS === 'android') {
+    try {
+      // Apenas esconde a barra de navegação (método compatível com edge-to-edge)
+      await NavigationBar.setVisibilityAsync('hidden');
+    } catch (error) {
+      // Ignora erros silenciosamente para evitar warnings
+    }
+  }
+};
+
 export default function App() {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
-    // Esconde completamente a StatusBar de forma permanente
+    // Esconde completamente a StatusBar (barra superior)
     hideStatusBar();
     
-    // Android: remover NavigationBar sem deixar a tela preta
-    if (Platform.OS === 'android') {
-      NavigationBar.setVisibilityAsync('hidden'); // some totalmente
-      NavigationBar.setBehaviorAsync('inset-swipe'); // gestos funcionam
-      NavigationBar.setBackgroundColorAsync('transparent');
-      NavigationBar.setButtonStyleAsync('light');
-    }
+    // Esconde completamente a NavigationBar (barra inferior no Android)
+    hideNavigationBar();
 
     // Listener para quando o app volta ao foreground
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         hideStatusBar();
+        hideNavigationBar();
       }
       appState.current = nextAppState;
     });
 
     // Força a StatusBar a permanecer escondida periodicamente
-    const interval = setInterval(() => {
+    // Não precisa verificar NavigationBar com tanta frequência
+    const statusBarInterval = setInterval(() => {
       hideStatusBar();
-    }, 100);
+    }, 300);
+    
+    // Verifica NavigationBar com menos frequência
+    const navBarInterval = setInterval(() => {
+      if (Platform.OS === 'android') {
+        hideNavigationBar();
+      }
+    }, 1000);
 
     return () => {
       subscription.remove();
-      clearInterval(interval);
+      clearInterval(statusBarInterval);
+      clearInterval(navBarInterval);
     };
   }, []);
 
   return (
     <ThemeProvider>
       <NavigationContainer
-        onReady={() => hideStatusBar()}
-        onStateChange={() => hideStatusBar()}
+        onReady={() => {
+          hideStatusBar();
+          hideNavigationBar();
+        }}
+        onStateChange={() => {
+          hideStatusBar();
+          hideNavigationBar();
+        }}
       >
 
-        <StatusBar hidden={true} translucent={true} />
+        <StatusBar 
+          hidden={true} 
+          translucent={true} 
+          barStyle="light-content"
+          backgroundColor="transparent"
+        />
 
         <Stack.Navigator
           initialRouteName="Login"
@@ -100,6 +131,8 @@ export default function App() {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="CompanyRegister" component={CompanyRegisterScreen} />
           <Stack.Screen name="BenefitsRegister" component={BenefitsRegisterScreen} />
+          <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
+          <Stack.Screen name="AdminTokens" component={AdminTokensScreen} />
         </Stack.Navigator>
 
       </NavigationContainer>

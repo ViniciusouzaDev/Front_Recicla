@@ -36,20 +36,6 @@ export default function UserTypeScreen({ navigation }: UserTypeScreenProps) {
         'Trocar pontos por recompensas',
         'Acompanhar seu ranking'
       ]
-    },
-    {
-      id: 'company',
-      title: 'Empresa Parceira',
-      subtitle: 'Quero oferecer benefícios e recompensas',
-      icon: '🏢',
-      color: '#FFD600',
-      description: 'Cadastre sua empresa e ofereça benefícios para usuários',
-      features: [
-        'Cadastrar dados da empresa',
-        'Criar benefícios personalizados',
-        'Definir pontos necessários',
-        'Acompanhar resgates de benefícios'
-      ]
     }
   ];
 
@@ -78,8 +64,6 @@ export default function UserTypeScreen({ navigation }: UserTypeScreenProps) {
 
     if (selectedType === 'user') {
       navigation.navigate('Register', { userType: 'user' });
-    } else if (selectedType === 'company') {
-      navigation.navigate('CompanyAuth', { userType: 'company' });
     }
   };
 
@@ -138,7 +122,7 @@ export default function UserTypeScreen({ navigation }: UserTypeScreenProps) {
   );
 
   return (
-    <SafeAreaView style={userTypeScreenStyles.container}>
+    <SafeAreaView style={userTypeScreenStyles.container} edges={[]}>
       
       {/* Background Pattern */}
       <View style={userTypeScreenStyles.backgroundPattern} />

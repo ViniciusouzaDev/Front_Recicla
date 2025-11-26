@@ -20,6 +20,7 @@ interface User {
   points: number;
   avatar: string;
   level: string;
+  posicao?: number;
 }
 
 interface RankingScreenProps {
@@ -64,30 +65,85 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
     confettiLoop.start();
 
     const fetchRanking = async () => {
-      console.log("REQUISIÇÃO → ENVIANDO TOKEN?");
-      console.log(await AsyncStorage.getItem("token"));
+      console.log("🚀 Iniciando busca do ranking...");
+      const token = await AsyncStorage.getItem("token");
+      console.log("🔑 Token disponível:", token ? "Sim" : "Não");
 
       try {
         const data = await rankingService.getAllRankings();
+        
+        console.log("📊 Dados recebidos do service:", Array.isArray(data) ? `${data.length} itens` : "Não é array");
+        console.log("📊 Tipo dos dados:", typeof data);
+        console.log("📊 Dados completos:", JSON.stringify(data, null, 2));
+
         if (!Array.isArray(data)) {
+          console.error("❌ Dados não são um array:", typeof data, data);
           setError("Formato inválido do ranking");
+          setLoading(false);
           return;
         }
 
-        const formatted: User[] = data.map((item: any) => ({
-          id: item.usuario.usuario_id,
-          name: item.usuario.nome,
-          // 🔹 Pega total_pontos ou pontos, converte para número seguro
-          points: Number(item.total_pontos ?? item.pontos ?? 0),
-          avatar: '🌿',
-          level: item.usuario.nivel_conta || 'Reciclador',
+        if (data.length === 0) {
+          console.warn("⚠️ Ranking vazio - nenhum usuário encontrado");
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+
+        console.log("📊 Processando", data.length, "itens do ranking...");
+
+        const formatted: User[] = data.map((item: any, index: number) => {
+          console.log(`📋 Processando item ${index + 1}:`, JSON.stringify(item, null, 2));
+          
+          // O backend retorna: { posicao, usuario_id, pontuacao_total, usuario: {...} }
+          const usuario = item.usuario || {};
+          const pontuacaoTotal = Number(item.pontuacao_total ?? item.total_pontos ?? item.pontos ?? 0);
+          const posicao = item.posicao ?? (index + 1);
+          
+          const userFormatted = {
+            id: item.usuario_id ?? usuario.usuario_id ?? 0,
+            name: usuario.nome || item.nome || 'Usuário',
+            points: pontuacaoTotal,
+            avatar: '🌿',
+            level: usuario.nivel_conta || item.nivel_conta || 'Reciclador',
+            posicao: posicao,
+          };
+          
+          console.log(`✅ Item ${index + 1} formatado:`, userFormatted);
+          return userFormatted;
+        });
+
+        console.log("📊 Total de itens formatados:", formatted.length);
+
+        // Remove duplicados baseado no ID
+        const uniqueUsers = Array.from(new Map(formatted.map(u => [u.id, u])).values());
+        console.log("📊 Usuários únicos após remoção de duplicados:", uniqueUsers.length);
+
+        // Ordenar do MAIOR para o MENOR (decrescente)
+        // Maior pontuação = posição melhor (1º lugar)
+        const sortedUsers = uniqueUsers.sort((a, b) => {
+          // Primeiro ordena por pontos (maior primeiro)
+          if (a.points !== b.points) {
+            return b.points - a.points;
+          }
+          // Se empatar, mantém a ordem original (posição)
+          return (a.posicao || 0) - (b.posicao || 0);
+        });
+
+        // Atualiza as posições baseado na ordem ordenada (1º, 2º, 3º, etc.)
+        const usersWithPosition = sortedUsers.map((user, index) => ({
+          ...user,
+          posicao: index + 1,
         }));
 
-        const uniqueUsers = Array.from(new Map(formatted.map(u => [u.id, u])).values());
-
-        // Ordenar por pontos decrescente
-        setUsers(uniqueUsers.sort((a, b) => b.points - a.points));
+        console.log("📊 Ranking ordenado (maior para menor):", usersWithPosition.map(u => ({ nome: u.name, pontos: u.points, posicao: u.posicao })));
+        console.log("✅ Total de usuários no ranking:", usersWithPosition.length);
+        
+        setUsers(usersWithPosition);
       } catch (err: any) {
+        console.error("❌ Erro ao buscar ranking:", err);
+        console.error("  - Mensagem:", err.message);
+        console.error("  - Stack:", err.stack);
         setError(err.message || 'Erro ao buscar ranking');
       } finally {
         setLoading(false);
@@ -118,8 +174,13 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
 
   const getProgressPercentage = (points: number) => {
     if (!users.length) return 0;
+    // Calcula a porcentagem baseado no maior e menor valor
+    const minPoints = Math.min(...users.map(u => u.points));
     const maxPoints = Math.max(...users.map(u => u.points));
-    return (points / maxPoints) * 100;
+    const range = maxPoints - minPoints;
+    if (range === 0) return 100;
+    // Maior pontuação = maior barra, menor pontuação = menor barra
+    return ((points - minPoints) / range) * 100;
   };
 
   if (loading) {
@@ -208,12 +269,29 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
     </View>
   );
 
-  const renderOtherUsers = () => (
-    <View style={rankingScreenStyles.otherUsersContainer}>
-      <Text style={rankingScreenStyles.otherUsersTitle}>Outros Recicladores</Text>
-      {users.slice(3).map((user, index) => {
-        const position = index + 4;
-        return (
+  const renderOtherUsers = () => {
+    if (users.length === 0) {
+      return (
+        <View style={rankingScreenStyles.otherUsersContainer}>
+          <Text style={rankingScreenStyles.otherUsersTitle}>Outros Recicladores</Text>
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: '#999', fontSize: 16, textAlign: 'center' }}>
+              Nenhum usuário no ranking ainda.
+            </Text>
+            <Text style={{ color: '#666', fontSize: 14, textAlign: 'center', marginTop: 10 }}>
+              Seja o primeiro a aparecer aqui!
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={rankingScreenStyles.otherUsersContainer}>
+        <Text style={rankingScreenStyles.otherUsersTitle}>Outros Recicladores</Text>
+        {users.slice(3).map((user, index) => {
+          const position = index + 4;
+          return (
           <View key={`other-${user.id}-${index}`} style={rankingScreenStyles.userCard}>
             <View style={rankingScreenStyles.userCardLeft}>
               <View style={rankingScreenStyles.rankBadgeSmall}>
@@ -235,10 +313,11 @@ export default function RankingScreen({ navigation }: RankingScreenProps) {
               </View>
             </View>
           </View>
-        );
-      })}
-    </View>
-  );
+          );
+        })}
+      </View>
+    );
+  };
 
   const renderTabBar = () => (
     <View style={rankingScreenStyles.tabBar}>

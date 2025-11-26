@@ -26,7 +26,6 @@ interface Material {
   name: string;
   color: string;
   icon: string;
-  description: string;
 }
 
 interface RecycleScreenProps {
@@ -46,10 +45,10 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
   const [currentCoords, setCurrentCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const materials: Material[] = [
-    { id: 'paper', name: 'Papel', color: '#00D1FF', icon: '📄', description: 'Jornais, revistas, caixas' },
-    { id: 'glass', name: 'Vidro', color: '#00FF84', icon: '🍾', description: 'Garrafas, potes, frascos' },
-    { id: 'metal', name: 'Metal', color: '#FFD600', icon: '🥫', description: 'Latas, panelas, arames' },
-    { id: 'plastic', name: 'Plástico', color: '#FF0000', icon: '🥤', description: 'Garrafas, embalagens, sacos' },
+    { id: 'paper', name: 'Papel', color: '#00D1FF', icon: '📄',  },
+    { id: 'glass', name: 'Vidro', color: '#00FF84', icon: '🍾', },
+    { id: 'metal', name: 'Metal', color: '#FFD600', icon: '🥫',  },
+    { id: 'plastic', name: 'Plástico', color: '#FF0000', icon: '🥤', },
   ];
 
   const tabs = [
@@ -238,7 +237,6 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
             >
               <Text style={recycleScreenStyles.materialIcon}>{material.icon}</Text>
               <Text style={recycleScreenStyles.materialName}>{material.name}</Text>
-              <Text style={recycleScreenStyles.materialDescription}>{material.description}</Text>
             </TouchableOpacity>
           </Animated.View>
         ))}
@@ -349,7 +347,7 @@ export default function RecycleScreen({ navigation }: RecycleScreenProps) {
   );
 
   return (
-    <SafeAreaView style={recycleScreenStyles.container}>
+    <SafeAreaView style={recycleScreenStyles.container} edges={[]}>
       <View style={recycleScreenStyles.backgroundPattern} />
       {renderHeader()}
       <ScrollView style={recycleScreenStyles.content} showsVerticalScrollIndicator={false}>

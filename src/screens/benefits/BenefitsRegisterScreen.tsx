@@ -202,7 +202,7 @@ export default function BenefitsRegisterScreen({ navigation }: BenefitsRegisterS
   );
 
   return (
-    <SafeAreaView style={commonStyles.container}>
+    <SafeAreaView style={commonStyles.container} edges={[]}>
       
       <View style={commonStyles.backgroundPattern} />
       
